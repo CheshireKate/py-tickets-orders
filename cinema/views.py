@@ -1,5 +1,5 @@
 from django.db.models import Count, F
-from django.db.models.query.QuerySet import annotate
+from django.db.models import annotate
 from rest_framework import viewsets
 
 from cinema.models import Genre, Actor, CinemaHall, Movie, MovieSession, Order
@@ -38,13 +38,18 @@ class MovieViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         queryset = self.queryset
-        strings = ["actors", "genres", "title"]
-        for string in strings:
-            string = self.request.query_params.get(string)
-            if string:
-                string_ids = [int(str_id) for str_id in string.split(",")]
-                queryset = queryset.filter(id__in=string_ids).all()
-        if self.action == ("list", "retrieve"):
+        actor_names = self.request.query_params.get("actor")
+        genre_names = self.request.query_params.get("genre")
+        title = self.request.query_params.get("title")
+        if actor_names:
+            actor_list = actor_names.split(",")
+            queryset = queryset.filter(actors__last_name__in=actor_list)
+        if genre_names:
+            genre_list = genre_names.split(",")
+            queryset = queryset.filter(genres__in=genre_list)
+        if title:
+            queryset = queryset.filter(title__icontains=title)
+        if self.action in ["list", "retrieve"]:
             queryset = queryset.prefetch_related("genres", "actors")
         return queryset.distinct()
 
